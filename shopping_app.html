@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping App</title>
+    <link rel="stylesheet" href="shopping_app.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        .coordinates-box {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="shopping-app">
+        <header>
+            <h1>Welcome to the Shopping App</h1>
+        </header>
+        <main>
+            <section class="map-section">
+                <h2>Map</h2>
+                <div id="map"></div>
+                <div class="coordinates-box" id="coordinates-box">
+                    <p>Coordinates: <span id="coordinates">51.505, -0.09</span></p>
+                </div>
+            </section>
+            <section class="chat-section">
+                <h2>Chat with GPT</h2>
+                <div class="chat-box">
+                    <div id="chat-log"></div>
+                    <input type="text" id="chat-input" placeholder="Ask about places...">
+                    <button id="chat-send">Send</button>
+                </div>
+            </section>
+            <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+            <script>
+                function initMap() {
+                    var map = L.map('map').setView([51.505, -0.09], 13);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(map);
+                }
+
+                document.addEventListener('DOMContentLoaded', initMap);
+
+                document.getElementById('chat-send').addEventListener('click', async () => {
+                    const input = document.getElementById('chat-input').value;
+                    const response = await fetch('https://api.openai.com/v1/engines/davinci-codex/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer YOUR_OPENAI_API_KEY'
+                        },
+                        body: JSON.stringify({
+                            prompt: `Provide coordinates for: ${input}`,
+                            max_tokens: 10
+                        })
+                    });
+                    const data = await response.json();
+                    const coordinates = data.choices[0].text.trim();
+                    const chatLog = document.getElementById('chat-log');
+                    chatLog.innerHTML += `<p><strong>You:</strong> ${input}</p>`;
+                    chatLog.innerHTML += `<p><strong>GPT:</strong> ${coordinates}</p>`;
+                    document.getElementById('coordinates').innerText = coordinates;
+
+                    // Update map view with new coordinates
+                    const [lat, lng] = coordinates.split(',').map(coord => parseFloat(coord.trim()));
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        const map = L.map('map').setView([lat, lng], 13);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        }).addTo(map);
+                    }
+                });
+            </script>
+        </main>
+        <footer>
+            <div class="chat-bar">
+                <input type="text" placeholder="Type your message here...">
+                <button>Send</button>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
