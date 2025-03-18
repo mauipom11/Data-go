@@ -16,11 +16,15 @@ import os
 from openai import OpenAI
 import json
 from feature import ModelTrainer
-
+import yaml
 # Function to trigger a rerun
 def trigger_rerun():
     st.experimental_set_query_params(rerun=True)
 
+# Load configuration from config.yaml
+config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml")
+with open(config_file, 'r') as file:
+    config = yaml.safe_load(file)
 
 # Path to your CSS file
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -53,20 +57,20 @@ def get_data_analysis(query, data):
             {"role": "user", "content": f"Here's the data information:\n{data_info}\n\nUser question: {query}"}
         ]
         
-        # # Get response from GPT-4
-        # response = client.chat.completions.create(
-        #     model="gpt-4-turbo-preview",
-        #     messages=messages,
-        #     temperature=0.7,
-        #     max_tokens=1000
-        # )
-               # Get response from GPT-4
+        # Get response from GPT-4
         response = client.chat.completions.create(
-            model="google/gemma-3-1b-it:free",
+            model="gpt-4-turbo-preview",
             messages=messages,
             temperature=0.7,
             max_tokens=1000
         )
+        #        # Get response from GPT-4
+        # response = client.chat.completions.create(
+        #     model="google/gemma-3-1b-it:free",
+        #     messages=messages,
+        #     temperature=0.7,
+        #     max_tokens=1000
+        # )
         
         return response.choices[0].message.content
     except Exception as e:
@@ -150,10 +154,15 @@ def check_feature_eligibility(data, features):
 with st.sidebar:
     st.title("Data Explorer")
 
-    # OpenAI API setup
-    api_key = st.text_input("Enter your OpenAI API key", type="password")
-    use_openrouter = st.checkbox("Use OpenRouter API")
+
+    api_key = config.get("openai_api_key")
+    use_openrouter = config.get("use_openrouter", False)
+
+
     if not api_key:
+        # OpenAI API setup
+        # api_key = st.text_input("Enter your OpenAI API key", type="password")
+        # use_openrouter = st.checkbox("Use OpenRouter API")
         st.error("OpenAI API key not found. Please enter your API key.")
         client = None
     else:
